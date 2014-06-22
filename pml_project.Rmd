@@ -1,0 +1,29 @@
+# Project for Practical Machine Learning
+
+## Classification using movement data
+
+With the training data set, our goal is to use data from accelerometers on the belts, forearm, arm and dumbell to predict what movement the participants are doing. Random forest is used as a machine learning method to do classication. The reason that random forest is used is that random forest gives the largest accuracy. After removing NAs and unrelated columns in training data set, 19622 records are usable for further analysis. Out of 19622 records, 60% (11776) records are used for training and the rest (40%: 7846) are for testing. This is the setup for cross validation. We expect the testing error rate (out of sample error rate) is higher than the training error rate (in sample error rate).
+```{r echo = TRUE}
+library(caret)
+# load data
+trainRawData <- read.csv("pml-training.csv",na.strings=c("NA",""))
+# discard NAs
+NAs <- apply(trainRawData,2,function(x) {sum(is.na(x))}) 
+validData <- trainRawData[,which(NAs == 0)]
+# make training set
+trainIndex <- createDataPartition(y = validData$classe, p=0.6,list=FALSE) 
+# discards unuseful predictors
+noneFeatureIndex <- grep("timestamp|X|user_name|new_window|num_window",names(validData))
+trainData <- validData[trainIndex,-noneFeatureIndex]
+testData <- validData[-trainIndex,-noneFeatureIndex]
+modFit <- train(classe ~.,data = trainData,method="rf",allowParallel=TRUE)
+confusionMatrix(predict(modFit,trainData),trainData$classe)
+```
+The accuracy for training is 1, and the in sample error is 0. The above result shows that the specificity and sensitivity for each class. 
+```{r echo = TRUE}
+result <- confusionMatrix(predict(modFit,testData),testData$classe)
+```
+The accuracy for testing is `r result$overall[1]` and the out sample error is `r 1-result$overall[1]`. The accuracy for each class is also shown above. This verifies our expectation before the experiment. 
+Also the model built above is used for the given testing data, and it turns out that the model by random forest classifies 20 records correctly.
+
+
